@@ -1,0 +1,10 @@
+import { NextResponse } from "next/server";
+import { auth } from "../../../../../auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const schema = z.object({ status: z.enum(["PENDING", "APPROVED", "REJECTED", "EXPIRED"]), rejectionReason: z.string().trim().max(500).optional() });
+
+async function admin() { const session = await auth(); return session?.user?.role === "ADMIN" ? session.user : null; }
+export async function GET() { if (!(await admin())) return NextResponse.json({ error: "Geen toegang." }, { status: 403 }); const documents = await prisma.document.findMany({ include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } }, orderBy: { createdAt: "desc" } }); return NextResponse.json(documents); }
+export async function PATCH(request: Request) { const actor = await admin(); if (!actor) return NextResponse.json({ error: "Geen toegang." }, { status: 403 }); const id = new URL(request.url).searchParams.get("id"); const parsed = schema.safeParse(await request.json()); if (!id || !parsed.success) return NextResponse.json({ error: "Ongeldige documentgegevens." }, { status: 400 }); const document = await prisma.document.update({ where: { id }, data: { status: parsed.data.status, rejectionReason: parsed.data.rejectionReason ?? null, verifiedAt: parsed.data.status === "APPROVED" ? new Date() : null } }); const required = await prisma.document.findMany({ where: { userId: document.userId, type: { in: ["IDENTITY", "SECURITY_PASS"] } }, select: { status: true } }); await prisma.securityProfile.updateMany({ where: { userId: document.userId }, data: { isVerified: required.length >= 2 && required.every((item) => item.status === "APPROVED") } }); await prisma.auditLog.create({ data: { actorId: actor.id, action: `DOCUMENT_${parsed.data.status}`, entityType: "Document", entityId: id, metadata: { rejectionReason: parsed.data.rejectionReason ?? null } } }); return NextResponse.json(document); }

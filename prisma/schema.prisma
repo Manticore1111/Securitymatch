@@ -1,0 +1,637 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SECURITY_PROFESSIONAL
+  CLIENT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  DELETED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  RESPONSES_RECEIVED
+  PAUSED
+  FILLED
+  CONFIRMED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum ApplicationStatus {
+  PENDING
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  COMPLETED
+}
+
+enum DocumentType {
+  IDENTITY
+  SECURITY_PASS
+  CERTIFICATE
+  CONTRACT
+  INVOICE
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentType {
+  CLIENT_PAYMENT
+  PLATFORM_FEE
+  REFUND
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+  OVERDUE
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+  FLAGGED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+  CLOSED
+}
+
+enum DisputeReason {
+  PAYMENT
+  QUALITY
+  CANCELLATION
+  NO_SHOW
+  MISCONDUCT
+  OTHER
+}
+
+enum NotificationType {
+  APPLICATION
+  APPLICATION_UPDATE
+  MESSAGE
+  PAYMENT
+  REVIEW
+  SYSTEM
+  VERIFICATION
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  TENTATIVE
+}
+
+model User {
+  id                  String               @id @default(uuid()) @db.Uuid
+  email               String               @unique
+  username            String?              @unique
+  passwordHash        String?
+  firstName           String
+  lastName            String
+  phone               String?
+  role                UserRole
+  status              UserStatus           @default(PENDING)
+  avatarUrl           String?
+  emailVerifiedAt     DateTime?
+  termsAcceptedAt     DateTime?
+  termsVersion        String?
+  lastLoginAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  securityProfile     SecurityProfile?
+  clientProfile       ClientProfile?
+  companies           Company[]
+  jobs                Job[]                @relation("ClientJobs")
+  applications        JobApplication[]
+  conversations       ConversationMember[]
+  sentMessages        Message[]             @relation("SentMessages")
+  reviewsWritten      Review[]              @relation("WrittenReviews")
+  reviewsReceived     Review[]              @relation("ReceivedReviews")
+  certificates        Certificate[]
+  documents           Document[]
+  notifications       Notification[]
+  payments            Payment[]             @relation("PayerPayments")
+  payouts             Payout[]              @relation("ProfessionalPayouts")
+  invoices            Invoice[]             @relation("InvoiceRecipients")
+   issuedInvoices      Invoice[]             @relation("InvoiceClients")
+   professionalInvoices Invoice[]             @relation("InvoiceProfessionals")
+  favorites           Favorite[]
+  reportsFiled        Report[]              @relation("FiledReports")
+  reportsReceived     Report[]              @relation("ReportedReports")
+  auditLogs           AuditLog[]
+  disputesFiled       Dispute[]             @relation("FiledDisputes")
+  disputesAgainst     Dispute[]             @relation("ReportedDisputes")
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens  PasswordResetToken[]
+
+  @@index([role, status])
+  @@index([createdAt])
+}
+
+model SecurityProfile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @db.Uuid
+  bio                String?
+  city               String?
+  workArea           String?
+  hourlyRateCents    Int?
+  yearsExperience    Int?
+  specializations    String[]           @default([])
+  languages          String[]           @default([])
+  driverLicense      String?
+  ownTransport       Boolean            @default(false)
+  stripeAccountId    String?
+  availability       String?
+  kvkNumber          String?
+  securityPassNumber String?
+  verificationStatus VerificationStatus @default(PENDING)
+  isVerified         Boolean              @default(false)
+  ratingAverage      Decimal?           @db.Decimal(3, 2)
+  ratingCount        Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilities     Availability[]
+  jobs               Job[]              @relation("AssignedProfessional")
+
+  @@index([city, verificationStatus])
+}
+
+model ClientProfile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @db.Uuid
+  organizationName   String?
+  kvkNumber          String?
+  website            String?
+  description        String?
+  address            String?
+  city               String?
+  verificationStatus VerificationStatus @default(PENDING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([verificationStatus])
+}
+
+model Company {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerId     String   @db.Uuid
+  name        String
+  kvkNumber   String   @unique
+  vatNumber   String?
+  website     String?
+  address     String?
+  postalCode  String?
+  city        String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  jobs        Job[]
+
+  @@index([ownerId])
+  @@index([city])
+}
+
+model Job {
+  id                    String             @id @default(uuid()) @db.Uuid
+  clientId              String             @db.Uuid
+  companyId             String?            @db.Uuid
+  assignedProfessionalId String?            @db.Uuid
+  title                 String
+  description           String
+  category              String
+  location              String
+  street                String
+  postalCode            String
+  city                  String
+  startAt               DateTime
+  endAt                 DateTime
+  securityCount         Int                  @default(1)
+  hourlyRateCents       Int
+  budgetCents           Int?
+  negotiable             Boolean              @default(false)
+  experience             String?
+  certificates           String?
+  driverLicense          Boolean              @default(false)
+  ownTransport           Boolean              @default(false)
+  languages              String[]             @default([])
+  specializations       String[]             @default([])
+  status                JobStatus          @default(DRAFT)
+  publishedAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  client                User               @relation("ClientJobs", fields: [clientId], references: [id], onDelete: Restrict)
+  company               Company?           @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  assignedProfessional  SecurityProfile?   @relation("AssignedProfessional", fields: [assignedProfessionalId], references: [id], onDelete: SetNull)
+  requirements          JobRequirement[]
+  applications          JobApplication[]
+  availabilities        Availability[]
+  conversations         Conversation[]
+  reviews               Review[]
+  payments              Payment[]
+  invoices              Invoice[]
+  favorites             Favorite[]
+  reports               Report[]
+  disputes              Dispute[]
+
+  @@index([status, startAt])
+  @@index([location, category])
+  @@index([clientId, createdAt])
+}
+
+model JobRequirement {
+  id          String   @id @default(uuid()) @db.Uuid
+  jobId       String   @db.Uuid
+  name        String
+  description String?
+  required    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, name])
+  @@index([jobId])
+}
+
+model JobApplication {
+  id              String            @id @default(uuid()) @db.Uuid
+  jobId           String            @db.Uuid
+  applicantId      String            @db.Uuid
+  coverNote       String?
+  proposedRateCents Int?
+  availability    Boolean           @default(false)
+  relevantExperience String?
+  status          ApplicationStatus @default(PENDING)
+  appliedAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  job             Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicant       User              @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, applicantId])
+  @@index([applicantId, status])
+  @@index([jobId, status])
+}
+
+model Availability {
+  id             String             @id @default(uuid()) @db.Uuid
+  professionalId String             @db.Uuid
+  jobId          String?            @db.Uuid
+  startsAt       DateTime
+  endsAt         DateTime
+  status         AvailabilityStatus @default(AVAILABLE)
+  note           String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  professional   SecurityProfile   @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  job            Job?               @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([professionalId, startsAt, endsAt])
+  @@index([jobId])
+}
+
+model Conversation {
+  id        String               @id @default(uuid()) @db.Uuid
+  jobId     String?              @db.Uuid
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  job       Job?                 @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  members   ConversationMember[]
+  messages  Message[]
+
+  @@index([jobId])
+}
+
+model ConversationMember {
+  conversationId String       @db.Uuid
+  userId         String       @db.Uuid
+  joinedAt       DateTime     @default(now())
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  senderId       String       @db.Uuid
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model Review {
+  id         String       @id @default(uuid()) @db.Uuid
+  jobId      String       @db.Uuid
+  authorId   String       @db.Uuid
+  recipientId String      @db.Uuid
+  rating     Int
+  dimensions Json?
+  title      String?
+  body       String?
+  status     ReviewStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  job        Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  author     User         @relation("WrittenReviews", fields: [authorId], references: [id], onDelete: Cascade)
+  recipient  User         @relation("ReceivedReviews", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, authorId, recipientId])
+  @@index([recipientId, status])
+  @@index([jobId])
+}
+
+model Certificate {
+  id           String             @id @default(uuid()) @db.Uuid
+  userId       String             @db.Uuid
+  name         String
+  issuer       String?
+  certificateNumber String?
+  issuedAt     DateTime?
+  expiresAt    DateTime?
+  status       VerificationStatus @default(PENDING)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents    Document[]
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
+model Document {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  certificateId String?        @db.Uuid
+  type          DocumentType
+  fileName      String
+  storageKey    String         @unique
+  status        DocumentStatus @default(PENDING)
+  rejectionReason String?
+  expiresAt     DateTime?
+  verifiedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certificate   Certificate?   @relation(fields: [certificateId], references: [id], onDelete: SetNull)
+
+  @@index([userId, type, status])
+  @@index([expiresAt])
+}
+
+model Payment {
+  id            String        @id @default(uuid()) @db.Uuid
+  payerId       String        @db.Uuid
+  jobId         String?       @db.Uuid
+  amountCents   Int
+  platformFeeCents Int        @default(0)
+  professionalAmountCents Int @default(0)
+  currency      String        @default("EUR")
+  type          PaymentType
+  status        PaymentStatus @default(PENDING)
+  provider      String?
+  providerId    String?       @unique
+  checkoutSessionId String?   @unique
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  payer         User          @relation("PayerPayments", fields: [payerId], references: [id], onDelete: Restrict)
+  job           Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  payouts       Payout[]
+  invoices      Invoice[]
+
+  @@index([payerId, status])
+  @@index([jobId])
+  @@index([status, createdAt])
+}
+
+model Payout {
+  id             String         @id @default(uuid()) @db.Uuid
+  professionalId String         @db.Uuid
+  paymentId      String?        @db.Uuid
+  amountCents    Int
+  currency       String         @default("EUR")
+  status         PayoutStatus   @default(PENDING)
+  providerId     String?        @unique
+  paidAt         DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  professional   User           @relation("ProfessionalPayouts", fields: [professionalId], references: [id], onDelete: Restrict)
+  payment        Payment?       @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([professionalId, status])
+  @@index([paymentId])
+}
+
+model Invoice {
+  id          String        @id @default(uuid()) @db.Uuid
+  recipientId String        @db.Uuid
+  clientId    String        @db.Uuid
+  professionalId String     @db.Uuid
+  jobId       String?       @db.Uuid
+  paymentId   String?       @db.Uuid
+  number      String        @unique
+  amountCents Int
+  hours       Decimal       @db.Decimal(8, 2)
+  hourlyRateCents Int
+  vatCents    Int           @default(0)
+  commissionCents Int       @default(0)
+  currency    String        @default("EUR")
+  status      InvoiceStatus @default(DRAFT)
+  issuedAt    DateTime?
+  dueAt       DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  recipient   User          @relation("InvoiceRecipients", fields: [recipientId], references: [id], onDelete: Restrict)
+  client      User          @relation("InvoiceClients", fields: [clientId], references: [id], onDelete: Restrict)
+  professional User         @relation("InvoiceProfessionals", fields: [professionalId], references: [id], onDelete: Restrict)
+  job         Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  payment     Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, status])
+  @@index([jobId])
+}
+
+model Favorite {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  jobId     String?  @db.Uuid
+  targetUserId String? @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([userId, createdAt])
+  @@index([targetUserId])
+}
+
+model Report {
+  id         String   @id @default(uuid()) @db.Uuid
+  reporterId String   @db.Uuid
+  reportedUserId String? @db.Uuid
+  jobId      String?  @db.Uuid
+  reason     String
+  details    String?
+  resolvedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  reporter   User     @relation("FiledReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User?  @relation("ReportedReports", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  job        Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([jobId])
+}
+
+model Dispute {
+  id            String        @id @default(uuid()) @db.Uuid
+  filedById     String        @db.Uuid
+  againstUserId String?       @db.Uuid
+  jobId         String?       @db.Uuid
+  reason        DisputeReason
+  description   String
+  status        DisputeStatus @default(OPEN)
+  resolution    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  filedBy       User          @relation("FiledDisputes", fields: [filedById], references: [id], onDelete: Cascade)
+  againstUser   User?         @relation("ReportedDisputes", fields: [againstUserId], references: [id], onDelete: SetNull)
+  job           Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([filedById])
+  @@index([jobId])
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+}
+
+model PlatformSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}

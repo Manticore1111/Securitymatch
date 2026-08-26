@@ -1,0 +1,15 @@
+"use client";
+
+import { useState } from "react";
+
+type ProfileData = { firstName: string; lastName: string; email: string; phone: string; organizationName: string; kvkNumber: string; website: string; description: string; address: string; city: string };
+
+export function ClientProfileForm({ initialData }: { initialData: ProfileData }) {
+  const [data, setData] = useState(initialData);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  function update(field: keyof ProfileData, value: string) { setData((current) => ({ ...current, [field]: value })); }
+  async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); setSaving(true); setMessage(""); setError(""); const response = await fetch("/api/client-profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); const result = await response.json(); setSaving(false); if (!response.ok) setError(result.error ?? "Opslaan is niet gelukt."); else setMessage("Bedrijfsprofiel opgeslagen."); }
+  return <form onSubmit={submit} className="space-y-6"><div className="grid gap-5 sm:grid-cols-2"><label className="field">Voornaam<input required value={data.firstName} onChange={(event) => update("firstName", event.target.value)} /></label><label className="field">Achternaam<input required value={data.lastName} onChange={(event) => update("lastName", event.target.value)} /></label><label className="field">E-mailadres<input required type="email" value={data.email} onChange={(event) => update("email", event.target.value)} /></label><label className="field">Telefoonnummer<input value={data.phone} onChange={(event) => update("phone", event.target.value)} /></label><label className="field sm:col-span-2">Bedrijfsnaam<input required value={data.organizationName} onChange={(event) => update("organizationName", event.target.value)} /></label><label className="field">KvK-nummer<input value={data.kvkNumber} onChange={(event) => update("kvkNumber", event.target.value)} /></label><label className="field">Website<input type="url" placeholder="https://..." value={data.website} onChange={(event) => update("website", event.target.value)} /></label><label className="field sm:col-span-2">Adres<input value={data.address} onChange={(event) => update("address", event.target.value)} /></label><label className="field">Plaats<input value={data.city} onChange={(event) => update("city", event.target.value)} /></label><label className="field sm:col-span-2">Bedrijfsomschrijving<textarea rows={5} value={data.description} onChange={(event) => update("description", event.target.value)} /></label></div>{error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}{message && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}<button disabled={saving} type="submit" className="min-h-12 rounded-lg bg-orange-500 px-6 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-60">{saving ? "Opslaan..." : "Profiel opslaan"}</button></form>;
+}

@@ -1,0 +1,418 @@
+2Fase 1 – Planning
+Stap 1: Project opzetten
+
+Maak een GitHub-repository.
+
+Gebruik:
+
+Next.js 15
+React
+TypeScript
+Tailwind CSS
+Prisma
+PostgreSQL
+Express API
+JWT
+bcrypt
+Socket.io
+Stripe
+Docker
+Stap 2: Mappenstructuur
+SecurityMatch/
+
+app/
+
+components/
+
+hooks/
+
+lib/
+
+prisma/
+
+public/
+
+styles/
+
+types/
+
+server/
+
+routes/
+
+controllers/
+
+middleware/
+
+services/
+
+uploads/
+
+utils/
+
+tests/
+
+docs/
+Fase 2 – Database
+
+Maak de volgende tabellen.
+
+Users
+id
+naam
+email
+wachtwoord
+telefoon
+rol
+profielfoto
+aangemaaktOp
+Companies
+id
+userId
+bedrijfsnaam
+kvk
+btw
+website
+adres
+postcode
+plaats
+provincie
+logo
+beschrijving
+Guards
+id
+userId
+beveiligingspas
+bhv
+ehbo
+rijbewijs
+eigenVervoer
+ervaring
+uurtarief
+Jobs
+id
+opdrachtgever
+titel
+omschrijving
+categorie
+locatie
+uren
+startdatum
+einddatum
+uurtarief
+status
+Applications
+id
+jobId
+userId
+motivatie
+prijs
+status
+Reviews
+id
+reviewer
+ontvanger
+sterren
+tekst
+Messages
+id
+afzender
+ontvanger
+bericht
+datum
+Notifications
+id
+user
+type
+gelezen
+Fase 3 – Authenticatie
+
+Maak:
+
+✔ Registreren
+
+✔ Inloggen
+
+✔ Uitloggen
+
+✔ JWT
+
+✔ Refresh tokens
+
+✔ Wachtwoord reset
+
+✔ Email verificatie
+
+Fase 4 – Rollen
+Opdrachtgever
+
+Kan:
+
+opdracht plaatsen
+opdracht verwijderen
+reacties bekijken
+chatten
+reviews schrijven
+ZZP Beveiliger
+
+Kan:
+
+profiel beheren
+opdrachten bekijken
+reageren
+chatten
+reviews ontvangen
+Bedrijf
+
+Kan:
+
+medewerkers beheren
+reageren
+planning maken
+Admin
+
+Kan:
+
+gebruikers verwijderen
+opdrachten verwijderen
+certificaten controleren
+reviews beheren
+Fase 5 – Dashboard
+
+Iedere gebruiker krijgt een dashboard.
+
+Toon:
+
+statistieken
+notificaties
+recente berichten
+agenda
+inkomsten
+open opdrachten
+Fase 6 – Opdrachten
+
+Maak formulier.
+
+Velden:
+
+Titel
+
+Omschrijving
+
+Aantal beveiligers
+
+Uurtarief
+
+Datum
+
+Starttijd
+
+Eindtijd
+
+Provincie
+
+Plaats
+
+Spoed
+
+Benodigde certificaten
+
+Foto's
+
+Fase 7 – Zoeken
+
+Zoeken op:
+
+Provincie
+
+Plaats
+
+Postcode
+
+Afstand
+
+Categorie
+
+Uurtarief
+
+Beschikbaarheid
+
+Fase 8 – Chat
+
+Socket.io
+
+Realtime
+
+Online status
+
+Typing indicator
+
+Bestanden
+
+Foto's
+
+PDF
+
+Fase 9 – Reviews
+
+5 sterren
+
+Tekst
+
+Datum
+
+Gemiddelde score
+
+Fase 10 – Agenda
+
+Iedere beveiliger krijgt een agenda.
+
+Beschikbaar
+
+Niet beschikbaar
+
+Gepland
+
+Vrij
+
+Fase 11 – Betalingen
+
+Stripe
+
+iDEAL
+
+Facturen
+
+BTW
+
+Commissie
+
+Abonnementen
+
+Credits
+
+Fase 12 – Notificaties
+
+Email
+
+Push
+
+SMS
+
+Browser notificaties
+
+Fase 13 – Admin
+
+Dashboard
+
+Gebruikers
+
+Bedrijven
+
+Beveiligers
+
+Reviews
+
+Facturen
+
+Rapportages
+
+Statistieken
+
+Fase 14 – Veiligheid
+
+Helmet
+
+Rate Limiter
+
+CORS
+
+CSRF
+
+XSS
+
+SQL Injection
+
+Validatie
+
+Logging
+
+Audit trail
+
+Fase 15 – Design
+
+Professioneel donker thema.
+
+Kleuren:
+
+Blauw
+
+Wit
+
+Donkergrijs
+
+Accentkleur goud
+
+Responsive
+
+Desktop
+
+Tablet
+
+Mobiel
+
+Fase 16 – Pagina's
+Home
+Over ons
+Contact
+FAQ
+Privacybeleid
+Algemene voorwaarden
+Dashboard
+Profiel
+Opdrachten
+Opdracht plaatsen
+Berichten
+Reviews
+Agenda
+Instellingen
+Login
+Registreren
+Fase 17 – Testen
+
+Unit tests
+
+API tests
+
+Integratietests
+
+Responsiveness
+
+Performance
+
+Security
+
+Fase 18 – Livegang
+Domeinnaam registreren
+SSL-certificaat
+Database configureren
+Omgevingsvariabelen instellen
+Back-ups automatiseren
+Monitoring en logging activeren
+Productieversie uitrollen
+Prioriteiten
+
+Werk in deze volgorde:
+
+Registratie en inloggen.
+Profielen voor opdrachtgevers en beveiligers.
+Opdrachten plaatsen en bekijken.
+Reageren op opdrachten.
+Chat.
+Dashboard.
+Reviews.
+Betalingen.
+Admin-dashboard.
+Extra functies zoals agenda, notificaties en rapportages.
+
+Met deze aanpak heb je na enkele weken een eerste bruikbare versie, waarna je stap voor stap nieuwe functies kunt toevoegen zonder het hele systeem opnieuw te hoeven bouwen.

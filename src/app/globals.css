@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8f5;
+  --foreground: #172629;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+::selection {
+  background: #d8eee7;
+  color: #172629;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid #87afa2;
+  outline-offset: 3px;
+}
+
+.field {
+  display: block;
+  color: #344145;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 1px solid #cfd9d5;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  color: #172629;
+  outline: none;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: #08705f;
+  box-shadow: 0 0 0 3px #d8eee7;
+}
+
+@keyframes home-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-home-reveal {
+  animation: home-reveal 620ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
