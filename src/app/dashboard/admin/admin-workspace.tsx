@@ -39,6 +39,7 @@ export function AdminWorkspace({ initialDocuments, counts }: AdminWorkspaceProps
       });
       const result = await response.json();
       if (!response.ok) {
+
         setError(result.error ?? "De documentstatus kon niet worden bijgewerkt.");
         return;
       }
