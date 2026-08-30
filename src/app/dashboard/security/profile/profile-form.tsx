@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { specializationOptions } from "@/lib/security-profile-validation";
 
 type ProfileData = {
@@ -49,6 +49,7 @@ export function DocumentUpload() {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [documents, setDocuments] = useState<UserDocument[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/documents")
@@ -79,6 +80,7 @@ export function DocumentUpload() {
         setMessage("Document geüpload en wacht op controle.");
         if (result.document) setDocuments((current) => [result.document, ...current]);
         setFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch {
       setError("Uploaden is niet gelukt.");
@@ -112,13 +114,19 @@ export function DocumentUpload() {
         <label className="field">
           Bestand
           <input
+            ref={fileInputRef}
             type="file"
             accept="application/pdf,image/jpeg,image/png"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           />
+          {file && (
+            <span className="mt-2 block text-xs font-semibold text-slate-600">
+              Geselecteerd: {file.name}
+            </span>
+          )}
         </label>
         <button
-          disabled={uploading}
+          disabled={uploading || !file}
           type="button"
           onClick={upload}
           className="min-h-12 rounded-lg bg-slate-950 px-5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60"
