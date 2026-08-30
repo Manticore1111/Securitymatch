@@ -15,6 +15,22 @@ const allowedMimeTypes = new Set([
 	"image/webp",
 ]);
 
+export async function GET() {
+
+	const session = await auth();
+	if (!session?.user || session.user.role !== "SECURITY_PROFESSIONAL") {
+		return NextResponse.json({ error: "Alleen beveiligers kunnen documenten bekijken." }, { status: 403 });
+	}
+
+	const documents = await prisma.document.findMany({
+		where: { userId: session.user.id },
+		select: { id: true, type: true, fileName: true, status: true, createdAt: true },
+		orderBy: { createdAt: "desc" },
+	});
+
+	return NextResponse.json({ documents });
+}
+
 export async function POST(request: Request) {
 	const session = await auth();
 
@@ -57,7 +73,15 @@ export async function POST(request: Request) {
 			},
 		});
 
-		return NextResponse.json({ id: document.id, status: document.status }, { status: 201 });
+		return NextResponse.json({
+			document: {
+				id: document.id,
+				type: document.type,
+				fileName: document.fileName,
+				status: document.status,
+				createdAt: document.createdAt,
+			},
+		}, { status: 201 });
 	} catch {
 		return NextResponse.json({ error: "Het document kon niet worden opgeslagen." }, { status: 500 });
 	}

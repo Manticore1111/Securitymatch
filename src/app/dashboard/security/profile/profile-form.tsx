@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { specializationOptions } from "@/lib/security-profile-validation";
 
 type ProfileData = {
@@ -34,12 +34,28 @@ const emptyProfile: ProfileData = {
   availability: "",
 };
 
+type UserDocument = {
+  id: string;
+  type: string;
+  fileName: string;
+  status: string;
+  createdAt: string;
+};
+
 export function DocumentUpload() {
   const [type, setType] = useState("CERTIFICATE");
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [documents, setDocuments] = useState<UserDocument[]>([]);
+
+  useEffect(() => {
+    fetch("/api/documents")
+      .then((response) => response.json())
+      .then((result) => setDocuments(result.documents ?? []))
+      .catch(() => setError("Documenten konden niet worden geladen."));
+  }, []);
 
   async function upload() {
     if (!file) {
@@ -61,6 +77,7 @@ export function DocumentUpload() {
       if (!response.ok) setError(result.error ?? "Uploaden is niet gelukt.");
       else {
         setMessage("Document geüpload en wacht op controle.");
+        if (result.document) setDocuments((current) => [result.document, ...current]);
         setFile(null);
       }
     } catch {
@@ -125,6 +142,17 @@ export function DocumentUpload() {
       <p className="mt-3 text-xs text-slate-500">
         PDF, JPG of PNG. Maximaal 10 MB.
       </p>
+      {documents.length > 0 && (
+        <div className="mt-6 space-y-2">
+          <h3 className="text-sm font-bold text-slate-950">Geüploade documenten</h3>
+          {documents.map((document) => (
+            <div key={document.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm">
+              <span className="font-semibold text-slate-700">{document.fileName}</span>
+              <span className="text-slate-500">{document.status === "PENDING" ? "Wacht op controle" : document.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
