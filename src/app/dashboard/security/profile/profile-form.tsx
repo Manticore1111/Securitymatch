@@ -48,6 +48,7 @@ export function DocumentUpload() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [documents, setDocuments] = useState<UserDocument[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,27 +59,45 @@ export function DocumentUpload() {
       .catch(() => setError("Documenten konden niet worden geladen."));
   }, []);
 
-  async function upload() {
-    if (!file) {
+  async function upload(selectedFile = file) {
+    if (!selectedFile) {
       setError("Kies eerst een bestand.");
       return;
     }
     setUploading(true);
+    setProgress(0);
     setError("");
     setMessage("");
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", selectedFile);
     formData.append("type", type);
     try {
-      const response = await fetch("/api/documents", {
-        method: "POST",
-        body: formData,
+      const result = await new Promise<{ document?: UserDocument; error?: string }>((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open("POST", "/api/documents");
+        request.upload.onprogress = (event) => {
+          if (event.lengthComputable) setProgress(Math.round((event.loaded / event.total) * 100));
+        };
+        request.onload = () => {
+          try {
+            const body = JSON.parse(request.responseText);
+            if (request.status >= 200 && request.status < 300) resolve(body);
+            else resolve({ error: body.error });
+          } catch {
+            reject(new Error("Ongeldige serverreactie."));
+          }
+        };
+        request.onerror = () => reject(new Error("Upload mislukt."));
+        request.send(formData);
       });
-      const result = await response.json();
-      if (!response.ok) setError(result.error ?? "Uploaden is niet gelukt.");
+      if (result.error) setError(result.error);
       else {
+        setProgress(100);
         setMessage("Document geüpload en wacht op controle.");
-        if (result.document) setDocuments((current) => [result.document, ...current]);
+        const uploadedDocument = result.document;
+        if (uploadedDocument) {
+          setDocuments((current) => [uploadedDocument, ...current]);
+        }
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
@@ -117,7 +136,12 @@ export function DocumentUpload() {
             ref={fileInputRef}
             type="file"
             accept="application/pdf,image/jpeg,image/png"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            disabled={uploading}
+            onChange={(event) => {
+              const selectedFile = event.target.files?.[0] ?? null;
+              setFile(selectedFile);
+              if (selectedFile) void upload(selectedFile);
+            }}
           />
           {file && (
             <span className="mt-2 block text-xs font-semibold text-slate-600">
@@ -126,14 +150,28 @@ export function DocumentUpload() {
           )}
         </label>
         <button
-          disabled={uploading || !file}
+          disabled
           type="button"
-          onClick={upload}
+          onClick={() => void upload()}
           className="min-h-12 rounded-lg bg-slate-950 px-5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60"
         >
-          {uploading ? "Uploaden..." : "Document uploaden"}
+          {uploading ? `Uploaden... ${progress}%` : "Kies eerst een bestand"}
         </button>
       </div>
+      {uploading && (
+        <div className="mt-4" aria-live="polite">
+          <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600">
+            <span>Document wordt geüpload...</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full bg-orange-500 transition-[width] duration-150"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
       {error && (
         <p role="alert" className="mt-3 text-sm font-semibold text-red-700">
           {error}
