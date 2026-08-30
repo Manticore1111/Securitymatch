@@ -16,5 +16,6 @@ export async function GET(request: Request) {
     prisma.user.update({ where: { id: record.userId }, data: { status: "ACTIVE", emailVerifiedAt: new Date() } }),
     prisma.emailVerificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
   ]);
-  return NextResponse.json({ message: "E-mailadres geverifieerd. Je kunt nu inloggen." });
+  const appUrl = process.env.APP_URL ?? new URL(request.url).origin;
+  return NextResponse.redirect(new URL("/login?verified=true", appUrl));
 }

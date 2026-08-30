@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     },
   });
 
-  const verificationUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}/api/verify-email?token=${rawToken}`;
+  const verificationUrl = `${process.env.APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000"}/api/verify-email?token=${rawToken}`;
   try {
     await sendEmail({
       to: user.email,
