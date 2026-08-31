@@ -6,6 +6,7 @@ import { legalDetails, legalDetailsAreComplete, legalLastUpdated } from "@/lib/l
 const legalLinks = [
   { href: "/voorwaarden", label: "Platformvoorwaarden" },
   { href: "/privacy", label: "Privacyverklaring" },
+  { href: "/privacy-verzoek", label: "AVG-verzoek indienen" },
   { href: "/cookies", label: "Cookiebeleid" },
   { href: "/klachten", label: "Klachten en geschillen" },
   { href: "/annuleren", label: "Annuleren en terugbetalen" },
