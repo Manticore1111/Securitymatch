@@ -7,7 +7,14 @@ import { sendEmail } from "@/lib/email";
 import { legalTermsVersion } from "@/lib/legal";
 
 export async function POST(request: Request) {
-  const parsed = registerSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Het registratieformulier kon niet worden gelezen. Vul alle velden opnieuw in." }, { status: 400 });
+  }
+
+  const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Ongeldige gegevens." }, { status: 400 });
   }
@@ -16,32 +23,38 @@ export async function POST(request: Request) {
   }
 
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (existing) return NextResponse.json({ error: "Dit e-mailadres is al geregistreerd." }, { status: 409 });
+  if (existing) return NextResponse.json({ error: "Registreren mislukt: dit e-mailadres is al geregistreerd. Gebruik een ander e-mailadres of log in." }, { status: 409 });
 
-  const user = await prisma.$transaction(async (transaction) => {
-    const created = await transaction.user.create({
-      data: {
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
-        email: parsed.data.email,
-        passwordHash: await hashPassword(parsed.data.password),
-        role: parsed.data.role,
-        status: process.env.EMAIL_VERIFICATION_REQUIRED === "false" ? "ACTIVE" : "PENDING",
-        termsAcceptedAt: new Date(),
-        termsVersion: legalTermsVersion,
-      },
+  let user;
+  try {
+    user = await prisma.$transaction(async (transaction) => {
+      const created = await transaction.user.create({
+        data: {
+          firstName: parsed.data.firstName,
+          lastName: parsed.data.lastName,
+          email: parsed.data.email,
+          passwordHash: await hashPassword(parsed.data.password),
+          role: parsed.data.role,
+          status: process.env.EMAIL_VERIFICATION_REQUIRED === "false" ? "ACTIVE" : "PENDING",
+          termsAcceptedAt: new Date(),
+          termsVersion: legalTermsVersion,
+        },
+      });
+      await transaction.auditLog.create({
+        data: {
+          actorId: created.id,
+          action: "TERMS_ACCEPTED",
+          entityType: "User",
+          entityId: created.id,
+          metadata: { version: legalTermsVersion },
+        },
+      });
+      return created;
     });
-    await transaction.auditLog.create({
-      data: {
-        actorId: created.id,
-        action: "TERMS_ACCEPTED",
-        entityType: "User",
-        entityId: created.id,
-        metadata: { version: legalTermsVersion },
-      },
-    });
-    return created;
-  });
+  } catch (error) {
+    console.error("Registration failed", error);
+    return NextResponse.json({ error: "Registreren mislukt door een technische fout. Controleer je gegevens en probeer het opnieuw." }, { status: 500 });
+  }
 
   if (process.env.EMAIL_VERIFICATION_REQUIRED === "false") {
     return NextResponse.json({ message: "Account aangemaakt. Je kunt nu direct inloggen." }, { status: 201 });

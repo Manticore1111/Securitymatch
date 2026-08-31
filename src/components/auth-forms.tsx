@@ -299,9 +299,10 @@ export function LoginForm() {
         />
         <PasswordField autoComplete="current-password" />
         {error && (
-          <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-            {error}
-          </p>
+          <div role="alert" className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <p className="font-bold">Registreren mislukt</p>
+            <p className="mt-1 leading-6">{error}</p>
+          </div>
         )}
         <button
           disabled={loading}
