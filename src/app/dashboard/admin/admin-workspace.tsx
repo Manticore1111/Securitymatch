@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type Document = {
   id: string;
@@ -83,6 +84,12 @@ export function AdminWorkspace({
             Volg marktactiviteit, controleer documenten en bewaak de
             operationele basis van het platform.
           </p>
+          <Link
+            href="/dashboard/admin/relaties"
+            className="mt-5 inline-flex items-center rounded-md bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-700"
+          >
+            Namen en bedrijven bekijken
+          </Link>
         </header>
         <section
           aria-label="Kerncijfers"

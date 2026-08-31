@@ -260,6 +260,9 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const requestedRole =
+    searchParams.get("role") === "CLIENT" ? "CLIENT" : "SECURITY_PROFESSIONAL";
+  const registerHref = `/register?role=${requestedRole}`;
   const requestedCallback = searchParams.get("callbackUrl");
   const callbackUrl = requestedCallback?.startsWith("/") ? requestedCallback : "/dashboard";
 
@@ -317,7 +320,7 @@ export function LoginForm() {
           Nog geen account?{" "}
           <Link
             className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-4"
-            href="/register"
+            href={registerHref}
           >
             Account maken
           </Link>
@@ -335,6 +338,7 @@ export function RegisterForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const loginHref = `/login?role=${role}`;
 
   async function submit(formData: FormData) {
     setError("");
@@ -394,7 +398,7 @@ export function RegisterForm() {
               <CheckCircle2 aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
               <p className="font-semibold">{success}</p>
             </div>
-            <Link className="mt-3 inline-flex items-center gap-2 font-bold underline underline-offset-4" href="/login">
+            <Link className="mt-3 inline-flex items-center gap-2 font-bold underline underline-offset-4" href={loginHref}>
               Ga naar inloggen
               <ArrowRight aria-hidden="true" size={16} />
             </Link>
@@ -413,7 +417,7 @@ export function RegisterForm() {
         Heb je al een account?{" "}
         <Link
           className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-4"
-          href="/login"
+          href={loginHref}
         >
           Inloggen
         </Link>

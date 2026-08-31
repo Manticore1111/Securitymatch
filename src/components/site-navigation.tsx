@@ -132,6 +132,14 @@ export function SiteNavigation({ role, userName, signOutAction }: SiteNavigation
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const items = navigationFor(role);
+  const audienceRole =
+    pathname === "/voor-ondernemers"
+      ? "CLIENT"
+      : pathname === "/voor-beveiligers"
+        ? "SECURITY_PROFESSIONAL"
+        : null;
+  const loginHref = audienceRole ? `/login?role=${audienceRole}` : "/login";
+  const registerHref = audienceRole ? `/register?role=${audienceRole}` : "/register";
   const homeHref = role ? dashboardPath(role) : "/";
   const primaryAction =
     role === "CLIENT"
@@ -218,14 +226,14 @@ export function SiteNavigation({ role, userName, signOutAction }: SiteNavigation
           ) : (
             <>
               <Link
-                href="/login"
+                href={loginHref}
                 className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-[#344145] hover:bg-[#f1f5f2]"
               >
                 <LogIn aria-hidden="true" size={16} />
                 Inloggen
               </Link>
               <Link
-                href="/register"
+                href={registerHref}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#e76f51] px-4 text-sm font-bold text-white transition hover:bg-[#cf5f45]"
               >
                 <Plus aria-hidden="true" size={16} />
@@ -298,7 +306,7 @@ export function SiteNavigation({ role, userName, signOutAction }: SiteNavigation
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <Link
-                    href="/login"
+                    href={loginHref}
                     onClick={closeMenu}
                     className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#d2ddd8] px-3 py-3 text-sm font-bold text-[#344145]"
                   >
@@ -306,7 +314,7 @@ export function SiteNavigation({ role, userName, signOutAction }: SiteNavigation
                     Inloggen
                   </Link>
                   <Link
-                    href="/register"
+                    href={registerHref}
                     onClick={closeMenu}
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#e76f51] px-3 py-3 text-sm font-bold text-white"
                   >

@@ -186,6 +186,7 @@ model User {
   reportsFiled        Report[]              @relation("FiledReports")
   reportsReceived     Report[]              @relation("ReportedReports")
   auditLogs           AuditLog[]
+  loginAttempts       LoginAttempt[]
   disputesFiled       Dispute[]             @relation("FiledDisputes")
   disputesAgainst     Dispute[]             @relation("ReportedDisputes")
   emailVerificationTokens EmailVerificationToken[]
@@ -631,6 +632,24 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
+}
+
+model LoginAttempt {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String?  @db.Uuid
+  identifier   String
+  successful   Boolean
+  ipAddress    String?
+  city         String?
+  region       String?
+  country      String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([identifier, createdAt])
+  @@index([userId, createdAt])
 }
 
 model PlatformSetting {
