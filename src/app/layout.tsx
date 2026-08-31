@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { auth, signOut } from "../../auth";
 import { LegalFooter } from "@/components/legal-footer";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { SiteNavigation } from "@/components/site-navigation";
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <ScrollToTop />
         <SiteNavigation role={session?.user?.role ?? null} userName={session?.user?.name} signOutAction={handleSignOut} />
         <div className="flex-1">{children}</div>
         <LegalFooter />
