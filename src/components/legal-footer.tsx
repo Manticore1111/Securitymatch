@@ -5,6 +5,7 @@ import { legalDetails, legalDetailsAreComplete } from "@/lib/legal";
 const legalLinks = [
   { href: "/voorwaarden", label: "Voorwaarden" },
   { href: "/privacy", label: "Privacy" },
+  { href: "/privacy-verzoek", label: "AVG-verzoek" },
   { href: "/cookies", label: "Cookies" },
   { href: "/klachten", label: "Klachten" },
   { href: "/annuleren", label: "Annuleren" },
