@@ -34,7 +34,24 @@ export async function PATCH(request: Request) {
   if (client.error) return client.error;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Opdracht-ID ontbreekt." }, { status: 400 });
-  const parsed = jobSchema.partial().safeParse(await request.json());
+  const body = await request.json();
+  const statusOnly = Object.keys(body).length === 1 && typeof body.status === "string";
+  if (statusOnly) {
+    const status = jobSchema.shape.status.safeParse(body.status);
+    if (!status.success) return NextResponse.json({ error: "Ongeldige opdrachtstatus." }, { status: 400 });
+    const existing = await prisma.job.findFirst({ where: { id, clientId: client.userId } });
+    if (!existing) return NextResponse.json({ error: "Opdracht niet gevonden." }, { status: 404 });
+    const job = await prisma.job.update({
+      where: { id },
+      data: {
+        status: status.data,
+        publishedAt: status.data === "PUBLISHED" ? existing.publishedAt ?? new Date() : existing.publishedAt,
+      },
+      select: jobSelect,
+    });
+    return NextResponse.json(job);
+  }
+  const parsed = jobSchema.partial().safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Ongeldige opdrachtgegevens." }, { status: 400 });
   const data = parsed.data;
   const existing = await prisma.job.findFirst({ where: { id, clientId: client.userId } });

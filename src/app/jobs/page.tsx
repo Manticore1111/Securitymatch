@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "../../../auth";
 import { prisma } from "@/lib/prisma";
 import { dutchLocations } from "@/lib/dutch-locations";
 
@@ -30,6 +32,11 @@ export default async function JobsPage({
 }: {
   searchParams: SearchParams;
 }) {
+  const session = await auth();
+  if (!session?.user) redirect("/register?role=SECURITY_PROFESSIONAL");
+  if (!["CLIENT", "SECURITY_PROFESSIONAL", "ADMIN"].includes(session.user.role)) {
+    redirect("/login");
+  }
   const params = await searchParams;
   const query = params.q?.trim() ?? "";
   const category = params.category ?? "";

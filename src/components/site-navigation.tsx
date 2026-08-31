@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   BriefcaseBusiness,
   ChevronDown,
+  Heart,
   LayoutDashboard,
   LogIn,
   LogOut,
@@ -48,6 +49,8 @@ function navigationFor(role: Role | null): NavigationItem[] {
     return [
       { href: "/dashboard/client", label: "Overzicht", icon: LayoutDashboard },
       { href: "/dashboard/client/jobs", label: "Opdrachten", icon: BriefcaseBusiness },
+      { href: "/dashboard/client/candidates", label: "Beveiligers zoeken", icon: ShieldCheck },
+      { href: "/dashboard/client/favorites", label: "Favorieten", icon: Heart },
       { href: "/dashboard/client/applications", label: "Reacties", icon: ShieldCheck },
       { href: "/dashboard/client/billing", label: "Betalingen", icon: ReceiptText },
       { href: "/messages", label: "Berichten", icon: MessageSquareText },
@@ -58,6 +61,7 @@ function navigationFor(role: Role | null): NavigationItem[] {
     return [
       { href: "/dashboard/security", label: "Overzicht", icon: LayoutDashboard },
       { href: "/jobs", label: "Opdrachten", icon: BriefcaseBusiness },
+      { href: "/dashboard/security/invitations", label: "Uitnodigingen", icon: BriefcaseBusiness },
       { href: "/dashboard/security/calendar", label: "Agenda", icon: Settings2 },
       { href: "/messages", label: "Berichten", icon: MessageSquareText },
       { href: "/dashboard/security/connect", label: "Uitbetalingen", icon: ReceiptText },

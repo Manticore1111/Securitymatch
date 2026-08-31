@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import type { ReactNode } from "react";
 import { auth, signOut } from "../../auth";
 import { LegalFooter } from "@/components/legal-footer";
 import { SiteNavigation } from "@/components/site-navigation";
@@ -19,6 +20,10 @@ export const metadata: Metadata = {
   title: "SecurityMatch | Beveiligingsprofessionals verbinden",
   description:
     "De marketplace voor ZZP-beveiligers en opdrachtgevers in Nederland.",
+  icons: {
+    icon: "/securitymatch-icon.svg",
+    apple: "/securitymatch-icon.svg",
+  },
 };
 
 async function handleSignOut() {
@@ -26,7 +31,7 @@ async function handleSignOut() {
   await signOut({ redirectTo: "/" });
 }
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await auth();
 
   return (

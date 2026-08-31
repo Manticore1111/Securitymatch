@@ -34,7 +34,11 @@ export const jobSchema = z.object({
   languages: z.array(z.string().trim().min(1).max(60)).max(20),
   specializations: z.array(z.string().trim().min(1).max(100)).max(20),
   status: z.enum(["DRAFT", "PUBLISHED", "RESPONSES_RECEIVED", "FILLED", "CONFIRMED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
-}).refine((value) => value.endAt > value.startAt, { message: "De eindtijd moet na de starttijd liggen.", path: ["endAt"] });
+}).refine(
+  (value) =>
+    !value.startAt || !value.endAt || value.endAt > value.startAt,
+  { message: "De eindtijd moet na de starttijd liggen.", path: ["endAt"] },
+);
 
 export type ClientProfileInput = z.infer<typeof clientProfileSchema>;
 export type JobInput = z.infer<typeof jobSchema>;

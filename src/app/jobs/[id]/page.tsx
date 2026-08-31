@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
+import { auth } from "../../../../auth";
 import { prisma } from "@/lib/prisma";
 import { ApplyForm } from "./apply-form";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user) redirect("/register?role=SECURITY_PROFESSIONAL");
+  if (!["CLIENT", "SECURITY_PROFESSIONAL", "ADMIN"].includes(session.user.role)) {
+    redirect("/login");
+  }
   const { id } = await params;
   const job = await prisma.job.findFirst({ where: { id, status: "PUBLISHED" }, select: { id: true, title: true, category: true, location: true, street: true, postalCode: true, city: true, description: true, startAt: true, endAt: true, securityCount: true, hourlyRateCents: true, budgetCents: true, negotiable: true, experience: true, certificates: true, driverLicense: true, ownTransport: true, languages: true, specializations: true } });
   if (!job) notFound();

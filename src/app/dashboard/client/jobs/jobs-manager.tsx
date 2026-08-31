@@ -99,7 +99,7 @@ const emptyDraft: Draft = {
   budgetCents: null,
   negotiable: false,
   description: "",
-  status: "DRAFT",
+  status: "PUBLISHED",
 };
 
 function euros(cents: number | null) {
@@ -438,6 +438,9 @@ export function JobsManager({ initialJobs }: { initialJobs: Job[] }) {
           {step === 8 && (
             <label className="field sm:col-span-2">
               Publicatiestatus
+              <span className="text-sm font-normal text-slate-500">
+                Alleen gepubliceerde opdrachten zijn zichtbaar voor ZZP-beveiligers.
+              </span>
               <select
                 value={draft.status}
                 onChange={(event) =>
