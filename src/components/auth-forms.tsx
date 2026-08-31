@@ -259,6 +259,9 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedCallback = searchParams.get("callbackUrl");
+  const callbackUrl = requestedCallback?.startsWith("/") ? requestedCallback : "/dashboard";
 
   async function submit(formData: FormData) {
     setError("");
@@ -275,7 +278,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push(callbackUrl);
     router.refresh();
   }
 
