@@ -5,25 +5,32 @@ import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { legalTermsVersion } from "@/lib/legal";
+import { recordRegistrationFailure } from "@/lib/registration-audit";
 
 export async function POST(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
   } catch {
+    await recordRegistrationFailure({ request, reason: "Het registratieformulier bevatte geen geldige JSON." });
     return NextResponse.json({ error: "Het registratieformulier kon niet worden gelezen. Vul alle velden opnieuw in." }, { status: 400 });
   }
 
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
+    await recordRegistrationFailure({ request, data: body as Record<string, unknown>, reason: parsed.error.issues[0]?.message ?? "Ongeldige gegevens." });
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Ongeldige gegevens." }, { status: 400 });
   }
   if (parsed.data.role === "ADMIN") {
+    await recordRegistrationFailure({ request, data: parsed.data, reason: "Adminaccounts worden alleen door de beheerder aangemaakt." });
     return NextResponse.json({ error: "Adminaccounts worden alleen door de beheerder aangemaakt." }, { status: 403 });
   }
 
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (existing) return NextResponse.json({ error: "Registreren mislukt: dit e-mailadres is al geregistreerd. Gebruik een ander e-mailadres of log in." }, { status: 409 });
+  if (existing) {
+    await recordRegistrationFailure({ request, data: parsed.data, reason: "Dit e-mailadres is al geregistreerd.", userId: existing.id });
+    return NextResponse.json({ error: "Registreren mislukt: dit e-mailadres is al geregistreerd. Gebruik een ander e-mailadres of log in." }, { status: 409 });
+  }
 
   let user;
   try {
@@ -53,6 +60,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Registration failed", error);
+    await recordRegistrationFailure({ request, data: parsed.data, reason: "Technische fout tijdens het aanmaken van het account." });
     return NextResponse.json({ error: "Registreren mislukt door een technische fout. Controleer je gegevens en probeer het opnieuw." }, { status: 500 });
   }
 
