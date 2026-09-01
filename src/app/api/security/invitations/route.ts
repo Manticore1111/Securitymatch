@@ -26,11 +26,27 @@ export async function PATCH(request: Request) {
   const invitation = await prisma.invitation.findFirst({ where: { id, professionalId: userId }, include: { job: true } });
   if (!invitation) return NextResponse.json({ error: "Uitnodiging niet gevonden." }, { status: 404 });
   if (!["SENT", "VIEWED"].includes(invitation.status) || invitation.expiresAt < new Date()) return NextResponse.json({ error: "Deze uitnodiging is niet meer beschikbaar." }, { status: 409 });
-  const updated = await prisma.$transaction(async (tx) => {
-    const result = await tx.invitation.update({ where: { id }, data: { status, viewedAt: invitation.viewedAt ?? new Date() } });
-    await tx.notification.create({ data: { userId: invitation.clientId, type: "APPLICATION_UPDATE", title: status === "ACCEPTED" ? "Uitnodiging geaccepteerd" : "Uitnodiging afgewezen", body: `Je uitnodiging voor '${invitation.job.title}' is ${status === "ACCEPTED" ? "geaccepteerd" : "afgewezen"}.` } });
-    if (status === "ACCEPTED") await tx.jobApplication.create({ data: { jobId: invitation.jobId, applicantId: userId, availability: true, coverNote: invitation.message, status: "ACCEPTED" } }).catch(() => undefined);
-    return result;
-  });
-  return NextResponse.json(updated);
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      if (status === "ACCEPTED") {
+        if (invitation.job.status === "ASSIGNED") throw new Error("JOB_ASSIGNED");
+        const overlap = await tx.jobApplication.findFirst({ where: { applicantId: userId, status: "ACCEPTED", job: { startAt: { lt: invitation.job.endAt }, endAt: { gt: invitation.job.startAt } } } });
+        if (overlap) throw new Error("OVERLAP");
+      }
+      const result = await tx.invitation.update({ where: { id }, data: { status, viewedAt: invitation.viewedAt ?? new Date() } });
+      await tx.notification.create({ data: { userId: invitation.clientId, type: "APPLICATION_UPDATE", title: status === "ACCEPTED" ? "Uitnodiging geaccepteerd" : "Uitnodiging afgewezen", body: `Je uitnodiging voor '${invitation.job.title}' is ${status === "ACCEPTED" ? "geaccepteerd" : "afgewezen"}.` } });
+      if (status === "ACCEPTED") {
+        await tx.jobApplication.upsert({ where: { jobId_applicantId: { jobId: invitation.jobId, applicantId: userId } }, create: { jobId: invitation.jobId, applicantId: userId, availability: true, coverNote: invitation.message, status: "ACCEPTED" }, update: { availability: true, coverNote: invitation.message, status: "ACCEPTED" } });
+        const profile = await tx.securityProfile.findUniqueOrThrow({ where: { userId }, select: { id: true } });
+        await tx.job.update({ where: { id: invitation.jobId }, data: { status: "ASSIGNED", assignedProfessionalId: profile.id } });
+      }
+      return result;
+    });
+    return NextResponse.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "UNKNOWN";
+    if (message === "OVERLAP") return NextResponse.json({ error: "Je hebt al een andere geaccepteerde opdracht op dit moment." }, { status: 409 });
+    if (message === "JOB_ASSIGNED") return NextResponse.json({ error: "Deze opdracht is inmiddels aan iemand anders toegewezen." }, { status: 409 });
+    return NextResponse.json({ error: "Je antwoord kon niet worden verwerkt. Probeer het opnieuw." }, { status: 500 });
+  }
 }
