@@ -288,7 +288,8 @@ export function ProfileForm({ initialData }: { initialData: ProfileData }) {
         </div>
       </section>
       <section>
-        <h2 className="text-lg font-bold text-slate-950">Werkprofiel</h2>
+        <h2 className="text-lg font-bold text-slate-950">Werkprofiel voor opdrachtgevers</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Ondernemers gebruiken deze gegevens om je ervaring, inzetbaarheid, reisafstand en praktische mogelijkheden te beoordelen.</p>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <label className="field">
             Woonplaats
