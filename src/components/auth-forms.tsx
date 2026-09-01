@@ -339,29 +339,66 @@ export function RegisterForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const loginHref = `/login?role=${role}`;
+  const [email, setEmail] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
+  const [step, setStep] = useState<"email" | "code" | "details">("email");
+  const profilePath = role === "SECURITY_PROFESSIONAL" ? "/dashboard/security/profile" : "/dashboard/client/profile";
+  const loginHref = `/login?role=${role}&callbackUrl=${encodeURIComponent(profilePath)}`;
+
+  async function requestCode(formData: FormData) {
+    setError("");
+    setLoading(true);
+    try {
+      const nextEmail = String(formData.get("email") ?? "").trim().toLowerCase();
+      const response = await fetch("/api/register/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: nextEmail }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.error ?? "Registreren is niet gelukt.");
+        return;
+      }
+      setEmail(nextEmail);
+      setStep("code");
+    } catch {
+      setError("Er ging iets mis met de verbinding. Probeer het opnieuw.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyCode(formData: FormData) {
+    setError("");
+    setLoading(true);
+    try {
+      const response = await fetch("/api/register/email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, code: formData.get("code") }) });
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.error ?? "De code kon niet worden gecontroleerd.");
+        return;
+      }
+      setVerificationToken(result.verificationToken);
+      setStep("details");
+    } catch {
+      setError("Er ging iets mis met de verbinding. Probeer het opnieuw.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function submit(formData: FormData) {
     setError("");
     setSuccess("");
     setLoading(true);
-
     try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...Object.fromEntries(formData),
-          termsAccepted: formData.get("termsAccepted") === "true",
-        }),
-      });
+      const response = await fetch("/api/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...Object.fromEntries(formData), email, emailVerificationToken: verificationToken, termsAccepted: formData.get("termsAccepted") === "true" }) });
       const result = await response.json();
-
       if (!response.ok) {
         setError(result.error ?? "Registreren is niet gelukt.");
         return;
       }
-
       setSuccess(result.message);
     } catch {
       setError("Er ging iets mis met de verbinding. Probeer het opnieuw.");
@@ -376,18 +413,9 @@ export function RegisterForm() {
       title="Maak jouw SecurityMatch-account."
       intro="Kies eerst hoe je SecurityMatch gaat gebruiken. Je kunt daarna direct je profiel en werkruimte inrichten."
     >
-      <form action={submit} className="mt-8 space-y-6">
-        <AccountTypePicker value={role} onChange={setRole} />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Voornaam" name="firstName" autoComplete="given-name" />
-          <Field label="Achternaam" name="lastName" autoComplete="family-name" />
-        </div>
-        <Field label="Zakelijk e-mailadres" name="email" type="email" autoComplete="email" />
-        <PasswordField autoComplete="new-password" />
-        <div className="flex items-start gap-3 border-t border-[#e2e8e4] pt-5">
-          <input id="termsAccepted" required name="termsAccepted" value="true" type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-[#08705f]" />
-          <label htmlFor="termsAccepted" className="text-sm leading-6 text-[#526064]">Ik ga akkoord met de <Link href="/voorwaarden" target="_blank" className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-3">platformvoorwaarden</Link> en heb de <Link href="/privacy" target="_blank" className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-3">privacyverklaring</Link> gelezen.</label>
-        </div>
+      {step === "email" && <form action={requestCode} className="mt-8 space-y-6"><Field label="Zakelijk e-mailadres" name="email" type="email" autoComplete="email" /><p className="text-sm leading-6 text-[#526064]">Je ontvangt een 6-cijferige code om je e-mailadres te bevestigen.</p><button disabled={loading} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#e76f51] px-5 text-sm font-bold text-white transition hover:bg-[#cf5f45] disabled:cursor-wait disabled:opacity-60" type="submit">{loading ? "Code versturen..." : "Code versturen"}<ArrowRight aria-hidden="true" size={17} /></button></form>}
+      {step === "code" && <form action={verifyCode} className="mt-8 space-y-6"><div><p className="text-sm font-bold text-[#172629]">Controleer je inbox</p><p className="mt-2 text-sm leading-6 text-[#526064]">Vul de code in die we naar {email} hebben gestuurd. De code is 15 minuten geldig.</p></div><Field label="6-cijferige verificatiecode" name="code" autoComplete="one-time-code" /><div className="flex gap-3"><button type="button" onClick={() => { setStep("email"); setError(""); }} className="h-12 flex-1 rounded-lg border border-[#c8d4cf] px-4 text-sm font-bold text-[#172629]">Ander e-mailadres</button><button disabled={loading} className="h-12 flex-1 rounded-lg bg-[#e76f51] px-4 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60" type="submit">{loading ? "Controleren..." : "Code bevestigen"}</button></div></form>}
+      {step === "details" && <form action={submit} className="mt-8 space-y-6"><p className="border border-[#b9dfd2] bg-[#eff7f3] p-3 text-sm font-semibold text-[#075c4e]">E-mailadres bevestigd: {email}</p><AccountTypePicker value={role} onChange={setRole} /><div className="grid gap-5 sm:grid-cols-2"><Field label="Voornaam" name="firstName" autoComplete="given-name" /><Field label="Achternaam" name="lastName" autoComplete="family-name" /></div><PasswordField autoComplete="new-password" /><div className="flex items-start gap-3 border-t border-[#e2e8e4] pt-5"><input id="termsAccepted" required name="termsAccepted" value="true" type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-[#08705f]" /><label htmlFor="termsAccepted" className="text-sm leading-6 text-[#526064]">Ik ga akkoord met de <Link href="/voorwaarden" target="_blank" className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-3">platformvoorwaarden</Link> en heb de <Link href="/privacy" target="_blank" className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-3">privacyverklaring</Link> gelezen.</label></div>
         {error && (
           <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
             {error}
@@ -412,8 +440,7 @@ export function RegisterForm() {
         >
           {loading ? "Account maken..." : "Account maken"}
           <ArrowRight aria-hidden="true" size={17} />
-        </button>
-      </form>
+        </button></form>}
       <p className="mt-6 border-t border-[#e2e8e4] pt-6 text-sm text-[#59666a]">
         Heb je al een account?{" "}
         <Link

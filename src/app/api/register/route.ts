@@ -1,9 +1,8 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { registerSchema } from "@/lib/auth-validation";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/email";
 import { legalTermsVersion } from "@/lib/legal";
 import { recordRegistrationFailure } from "@/lib/registration-audit";
 
@@ -26,15 +25,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Adminaccounts worden alleen door de beheerder aangemaakt." }, { status: 403 });
   }
 
+  const emailVerification = await prisma.registrationEmailVerification.findFirst({ where: { email: parsed.data.email, verificationTokenHash: createHash("sha256").update(parsed.data.emailVerificationToken).digest("hex"), verifiedAt: { not: null }, consumedAt: null, expiresAt: { gt: new Date() } } });
+  if (!emailVerification) {
+    await recordRegistrationFailure({ request, data: parsed.data, reason: "Het e-mailadres is niet bevestigd." });
+    return NextResponse.json({ error: "Bevestig eerst je e-mailadres met de code die je hebt ontvangen." }, { status: 400 });
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (existing) {
     await recordRegistrationFailure({ request, data: parsed.data, reason: "Dit e-mailadres is al geregistreerd.", userId: existing.id });
     return NextResponse.json({ error: "Registreren mislukt: dit e-mailadres is al geregistreerd. Gebruik een ander e-mailadres of log in." }, { status: 409 });
   }
 
-  let user;
   try {
-    user = await prisma.$transaction(async (transaction) => {
+    await prisma.$transaction(async (transaction) => {
       const created = await transaction.user.create({
         data: {
           firstName: parsed.data.firstName,
@@ -42,7 +46,8 @@ export async function POST(request: Request) {
           email: parsed.data.email,
           passwordHash: await hashPassword(parsed.data.password),
           role: parsed.data.role,
-          status: process.env.EMAIL_VERIFICATION_REQUIRED === "false" ? "ACTIVE" : "PENDING",
+          status: "ACTIVE",
+          emailVerifiedAt: emailVerification.verifiedAt,
           termsAcceptedAt: new Date(),
           termsVersion: legalTermsVersion,
         },
@@ -56,7 +61,7 @@ export async function POST(request: Request) {
           metadata: { version: legalTermsVersion },
         },
       });
-      return created;
+      await transaction.registrationEmailVerification.update({ where: { id: emailVerification.id }, data: { consumedAt: new Date() } });
     });
   } catch (error) {
     console.error("Registration failed", error);
@@ -64,29 +69,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Registreren mislukt door een technische fout. Controleer je gegevens en probeer het opnieuw." }, { status: 500 });
   }
 
-  if (process.env.EMAIL_VERIFICATION_REQUIRED === "false") {
-    return NextResponse.json({ message: "Account aangemaakt. Je kunt nu direct inloggen." }, { status: 201 });
-  }
-
-  const rawToken = randomBytes(32).toString("hex");
-  await prisma.emailVerificationToken.create({
-    data: {
-      userId: user.id,
-      tokenHash: createHash("sha256").update(rawToken).digest("hex"),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    },
-  });
-
-  const verificationUrl = `${process.env.APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3000"}/api/verify-email?token=${rawToken}`;
-  try {
-    await sendEmail({
-      to: user.email,
-      subject: "Bevestig je SecurityMatch-account",
-      html: `<p>Hallo ${user.firstName},</p><p>Bevestig je e-mailadres om je SecurityMatch-account te activeren.</p><p><a href="${verificationUrl}">E-mailadres bevestigen</a></p><p>Deze link is 24 uur geldig.</p>`,
-    });
-  } catch (error) {
-    console.error("Verification email failed", error);
-    return NextResponse.json({ error: "Je account is aangemaakt, maar de verificatiemail kon niet worden verzonden. Controleer de e-mailinstellingen en probeer het opnieuw." }, { status: 503 });
-  }
-  return NextResponse.json({ message: "Account aangemaakt. Controleer je e-mail om je account te activeren." }, { status: 201 });
+  return NextResponse.json({ message: "Account aangemaakt. Je kunt nu inloggen." }, { status: 201 });
 }

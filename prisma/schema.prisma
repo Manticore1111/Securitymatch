@@ -695,6 +695,20 @@ model EmailVerificationToken {
   @@index([expiresAt])
 }
 
+model RegistrationEmailVerification {
+  id                    String    @id @default(uuid()) @db.Uuid
+  email                 String    @unique
+  codeHash              String
+  verificationTokenHash String?   @unique
+  attempts              Int       @default(0)
+  verifiedAt            DateTime?
+  consumedAt            DateTime?
+  expiresAt             DateTime
+  createdAt             DateTime  @default(now())
+
+  @@index([expiresAt])
+}
+
 model PasswordResetToken {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid

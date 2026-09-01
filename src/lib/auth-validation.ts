@@ -18,6 +18,7 @@ export const registerSchema = z.object({
     .regex(/[0-9]/, "Gebruik minimaal één cijfer."),
   role: roleSchema,
   termsAccepted: z.boolean().refine((value) => value, "Je moet akkoord gaan met de platformvoorwaarden."),
+  emailVerificationToken: z.string().min(32, "Bevestig eerst je e-mailadres."),
 });
 
 export const forgotPasswordSchema = z.object({
