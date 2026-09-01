@@ -260,9 +260,6 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const requestedRole =
-    searchParams.get("role") === "CLIENT" ? "CLIENT" : "SECURITY_PROFESSIONAL";
-  const registerHref = `/register?role=${requestedRole}`;
   const requestedCallback = searchParams.get("callbackUrl");
   const callbackUrl = requestedCallback?.startsWith("/") ? requestedCallback : "/dashboard";
 
@@ -313,19 +310,29 @@ export function LoginForm() {
           <ArrowRight aria-hidden="true" size={17} />
         </button>
       </form>
-      <div className="mt-6 flex flex-col gap-3 border-t border-[#e2e8e4] pt-6 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 border-t border-[#e2e8e4] pt-6 text-sm">
         <Link className="font-bold text-[#08705f] hover:text-[#065b4d]" href="/forgot-password">
           Wachtwoord vergeten?
         </Link>
-        <p className="text-[#59666a]">
-          Nog geen account?{" "}
-          <Link
-            className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-4"
-            href={registerHref}
-          >
-            Account maken
-          </Link>
-        </p>
+        <div className="mt-5">
+          <p className="font-semibold text-[#59666a]">Nog geen account? Kies je accounttype:</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Link
+              className="rounded-lg border border-[#d2ddd8] bg-[#f7faf8] p-4 font-bold text-[#172629] transition hover:border-[#08705f] hover:bg-[#eff7f3]"
+              href="/register?role=CLIENT"
+            >
+              Registreren als ondernemer
+              <span className="mt-1 block text-xs font-medium text-[#687670]">Plaats opdrachten en vind beveiligers.</span>
+            </Link>
+            <Link
+              className="rounded-lg border border-[#d2ddd8] bg-[#fff8f5] p-4 font-bold text-[#172629] transition hover:border-[#e76f51] hover:bg-[#fff1ec]"
+              href="/register?role=SECURITY_PROFESSIONAL"
+            >
+              Registreren als zzp-beveiliger
+              <span className="mt-1 block text-xs font-medium text-[#687670]">Maak je profiel en vind opdrachten.</span>
+            </Link>
+          </div>
+        </div>
       </div>
     </AuthShell>
   );
