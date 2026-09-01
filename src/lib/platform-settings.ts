@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export const defaultPlatformCommissionPercent = 10;
+export const introductoryPlatformCommissionPercent = 5;
 const platformCommissionKey = "platform_commission_percent";
 
 export async function getPlatformCommissionPercent() {
