@@ -471,6 +471,8 @@ model Payment {
   provider      String?
   providerId    String?       @unique
   checkoutSessionId String?   @unique
+  agreementAcceptedAt DateTime?
+  agreementVersion String?
   paidAt        DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
