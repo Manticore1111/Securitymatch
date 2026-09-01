@@ -39,6 +39,8 @@ export async function PATCH(request: Request) {
         await tx.jobApplication.upsert({ where: { jobId_applicantId: { jobId: invitation.jobId, applicantId: userId } }, create: { jobId: invitation.jobId, applicantId: userId, availability: true, coverNote: invitation.message, status: "ACCEPTED" }, update: { availability: true, coverNote: invitation.message, status: "ACCEPTED" } });
         const profile = await tx.securityProfile.findUniqueOrThrow({ where: { userId }, select: { id: true } });
         await tx.job.update({ where: { id: invitation.jobId }, data: { status: "ASSIGNED", assignedProfessionalId: profile.id } });
+        await tx.jobApplication.updateMany({ where: { jobId: invitation.jobId, applicantId: { not: userId }, status: { in: ["PENDING", "SHORTLISTED"] } }, data: { status: "REJECTED" } });
+        await tx.invitation.updateMany({ where: { jobId: invitation.jobId, id: { not: invitation.id }, status: { in: ["SENT", "VIEWED"] } }, data: { status: "REJECTED" } });
       }
       return result;
     });

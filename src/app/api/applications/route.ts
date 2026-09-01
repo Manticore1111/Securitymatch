@@ -49,6 +49,8 @@ export async function PATCH(request: Request) {
       if (overlap) throw new Error("OVERLAP");
       const accepted = await tx.jobApplication.update({ where: { id }, data: { status: "ACCEPTED" } });
       await tx.job.update({ where: { id: application.jobId }, data: { status: "ASSIGNED", assignedProfessionalId: (await tx.securityProfile.findUniqueOrThrow({ where: { userId: application.applicantId }, select: { id: true } })).id } });
+      await tx.jobApplication.updateMany({ where: { jobId: application.jobId, id: { not: id }, status: { in: ["PENDING", "SHORTLISTED"] } }, data: { status: "REJECTED" } });
+      await tx.invitation.updateMany({ where: { jobId: application.jobId, status: { in: ["SENT", "VIEWED"] } }, data: { status: "REJECTED" } });
       return accepted;
     });
     return NextResponse.json(result);
