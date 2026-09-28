@@ -15,6 +15,7 @@ Dit document is een werkdocument en geen juridisch advies. Laat de uiteindelijke
 - [ ] Hostingregio's, subverwerkers en doorgiften buiten de EER gedocumenteerd.
 - [ ] DPIA beoordeeld voor identiteitsdocumenten, beveiligingsdocumenten en verificatie.
 - [ ] Procedure voor inzage, correctie, verwijdering, beperking, bezwaar en dataportabiliteit getest.
+- [ ] Beheerder controleert `/dashboard/admin/reports` regelmatig op open AVG-verzoeken, ook als de e-mailmelding niet aankomt; leg de afhandeling en wettelijke reactietermijn vast. Het indienen van een verzoek voert geen automatische verwijdering of export uit.
 - [ ] Datalekprocedure, contactpersoon en register ingericht.
 - [ ] Bewaartermijnen voor documenten, berichten, logs, accounts, betalingen en facturen vastgesteld.
 - [ ] Documentverwijdering, expiratie, toegangsaudit en back-ups getest.
