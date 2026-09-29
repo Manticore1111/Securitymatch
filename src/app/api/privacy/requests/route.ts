@@ -13,9 +13,6 @@ function escapeHtml(value: string) {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Log in om een AVG-verzoek in te dienen." }, { status: 401 });
-  if (!legalDetails.privacyEmail || legalDetails.privacyEmail === "Nog in te vullen") {
-    return NextResponse.json({ error: "Het privacycontact is nog niet geconfigureerd." }, { status: 503 });
-  }
 
   const body = await request.json().catch(() => null) as { type?: unknown; details?: unknown } | null;
   const type = typeof body?.type === "string" ? body.type : "";
@@ -25,26 +22,37 @@ export async function POST(request: Request) {
   }
   const accountEmail = session.user.email ?? "onbekend account";
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: session.user.id,
-      action: "PRIVACY_REQUEST_SUBMITTED",
-      entityType: "User",
-      entityId: session.user.id,
-      metadata: { type },
-    },
+  const report = await prisma.$transaction(async (transaction) => {
+    const created = await transaction.report.create({
+      data: {
+        reporterId: session.user.id,
+        reason: "PRIVACY",
+        details: `AVG-verzoek (${type})\n\n${details}`,
+      },
+    });
+    await transaction.auditLog.create({
+      data: {
+        actorId: session.user.id,
+        action: "PRIVACY_REQUEST_SUBMITTED",
+        entityType: "Report",
+        entityId: created.id,
+        metadata: { type },
+      },
+    });
+    return created;
   });
 
-  try {
-    await sendEmail({
-      to: legalDetails.privacyEmail,
-      subject: `AVG-verzoek van ${accountEmail}`,
-      html: `<p>Er is een AVG-verzoek ingediend via SecurityMatch.</p><p><strong>Type:</strong> ${escapeHtml(type)}</p><p><strong>Account:</strong> ${escapeHtml(accountEmail)}</p><p><strong>Toelichting:</strong></p><p>${escapeHtml(details).replace(/\n/g, "<br>")}</p>`,
-    });
-  } catch (error) {
-    console.error("Privacy request email failed", error);
-    return NextResponse.json({ error: "Het verzoek is geregistreerd, maar kon niet naar het privacycontact worden verzonden." }, { status: 503 });
+  if (legalDetails.privacyEmail && legalDetails.privacyEmail !== "Nog in te vullen") {
+    try {
+      await sendEmail({
+        to: legalDetails.privacyEmail,
+        subject: `AVG-verzoek van ${accountEmail}`,
+        html: `<p>Er is een AVG-verzoek ingediend via SecurityMatch.</p><p><strong>Type:</strong> ${escapeHtml(type)}</p><p><strong>Account:</strong> ${escapeHtml(accountEmail)}</p><p><strong>Toelichting:</strong></p><p>${escapeHtml(details).replace(/\n/g, "<br>")}</p>`,
+      });
+    } catch (error) {
+      console.error("Privacy request email failed", error);
+    }
   }
 
-  return NextResponse.json({ message: "Je AVG-verzoek is ontvangen. We nemen contact met je op." }, { status: 201 });
+  return NextResponse.json({ id: report.id, message: "Je AVG-verzoek is geregistreerd. We nemen contact met je op." }, { status: 201 });
 }
