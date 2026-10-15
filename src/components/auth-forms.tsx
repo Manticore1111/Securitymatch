@@ -33,7 +33,7 @@ const accountTypes: Array<{
 }> = [
   {
     value: "CLIENT",
-    title: "Ik ben ondernemer",
+    title: "Ik ben opdrachtgever",
     description: "Ik zoek beveiligers voor mijn organisatie of opdracht.",
     icon: BriefcaseBusiness,
   },
@@ -93,7 +93,7 @@ function AuthShell({
             <div className="flex items-center gap-3">
               <CheckCircle2 aria-hidden="true" className="text-[#f7baaa]" size={21} />
               <p className="text-sm font-semibold">
-                Voor ondernemers en zelfstandige beveiligers
+                Voor opdrachtgevers en zelfstandige beveiligers
               </p>
             </div>
           </div>
@@ -326,7 +326,7 @@ export function LoginForm() {
               className="rounded-lg border border-[#d2ddd8] bg-[#f7faf8] p-4 font-bold text-[#172629] transition hover:border-[#08705f] hover:bg-[#eff7f3]"
               href="/register?role=CLIENT"
             >
-              Registreren als ondernemer
+              Registreren als opdrachtgever
               <span className="mt-1 block text-xs font-medium text-[#687670]">Plaats opdrachten en vind beveiligers.</span>
             </Link>
             <Link

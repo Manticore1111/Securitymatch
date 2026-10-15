@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Je moet ingelogd zijn." }, { status: 401 });
-  if (session.user.role !== "CLIENT") return NextResponse.json({ error: "Alleen ondernemers kunnen uitnodigen." }, { status: 403 });
+  if (session.user.role !== "CLIENT") return NextResponse.json({ error: "Alleen opdrachtgevers kunnen uitnodigen." }, { status: 403 });
   const body = await request.json();
   const job = await prisma.job.findFirst({ where: { id: body.jobId, clientId: session.user.id, status: { in: ["DRAFT", "PUBLISHED", "RESPONSES_RECEIVED"] } }, select: { id: true, title: true, startAt: true, endAt: true } });
   const professional = await prisma.user.findFirst({ where: { id: body.professionalId, role: "SECURITY_PROFESSIONAL", status: "ACTIVE" }, select: { id: true } });

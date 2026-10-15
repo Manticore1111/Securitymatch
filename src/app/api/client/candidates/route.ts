@@ -3,7 +3,7 @@ import { auth } from "../../../../../auth";
 import { prisma } from "@/lib/prisma";
 
 function accessError() {
-  return NextResponse.json({ error: "Alleen ondernemers kunnen beveiligers zoeken." }, { status: 403 });
+  return NextResponse.json({ error: "Alleen opdrachtgevers kunnen beveiligers zoeken." }, { status: 403 });
 }
 
 export async function GET(request: Request) {
