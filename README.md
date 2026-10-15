@@ -45,6 +45,10 @@ SecurityMatch is a Dutch marketplace where clients find independent security pro
 
 	Open [http://localhost:3000](http://localhost:3000).
 
+## Verificatiemails
+
+Registreer en verifieer een eigen verzenddomein bij Resend voordat je registraties openstelt. Stel `RESEND_API_KEY` en `EMAIL_FROM` in op een afzender van dat domein (niet `onboarding@resend.dev`). Configureer de door Resend opgegeven SPF- en DKIM-records en een passend DMARC-record bij je DNS-provider; controleer de verificatiestatus en verstuur testmails naar verschillende providers. Zonder deze configuratie mislukt het verzenden van verificatiecodes met een duidelijke foutmelding. De applicatie kan aflevering in de primaire inbox niet garanderen: de ontvangende mailprovider bepaalt of een bericht in de inbox of spam belandt. Vraag gebruikers zo nodig ook hun spammap te controleren.
+
 ## Stripe Test Mode
 
 Only Stripe test mode is supported. The application rejects `sk_live_` keys.

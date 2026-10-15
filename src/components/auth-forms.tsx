@@ -33,7 +33,7 @@ const accountTypes: Array<{
 }> = [
   {
     value: "CLIENT",
-    title: "Ik ben ondernemer",
+    title: "Ik ben opdrachtgever",
     description: "Ik zoek beveiligers voor mijn organisatie of opdracht.",
     icon: BriefcaseBusiness,
   },
@@ -93,7 +93,7 @@ function AuthShell({
             <div className="flex items-center gap-3">
               <CheckCircle2 aria-hidden="true" className="text-[#f7baaa]" size={21} />
               <p className="text-sm font-semibold">
-                Voor ondernemers en zelfstandige beveiligers
+                Voor opdrachtgevers en zelfstandige beveiligers
               </p>
             </div>
           </div>
@@ -261,25 +261,30 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCallback = searchParams.get("callbackUrl");
-  const callbackUrl = requestedCallback?.startsWith("/") ? requestedCallback : "/dashboard";
+  const callbackUrl = requestedCallback?.startsWith("/") && !requestedCallback.startsWith("//") && !requestedCallback.includes("\\")
+    ? requestedCallback
+    : "/dashboard";
 
   async function submit(formData: FormData) {
     setError("");
     setLoading(true);
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Controleer je e-mailadres of gebruikersnaam en wachtwoord.");
-      return;
+    try {
+      const result = await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirect: false,
+      });
+      if (result?.error) {
+        setError("Controleer je e-mailadres of gebruikersnaam en wachtwoord.");
+        return;
+      }
+      router.push(callbackUrl);
+      router.refresh();
+    } catch {
+      setError("Inloggen is tijdelijk niet gelukt. Probeer het opnieuw.");
+    } finally {
+      setLoading(false);
     }
-
-    router.push(callbackUrl);
-    router.refresh();
   }
 
   return (
@@ -297,7 +302,7 @@ export function LoginForm() {
         <PasswordField autoComplete="current-password" />
         {error && (
           <div role="alert" className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            <p className="font-bold">Registreren mislukt</p>
+            <p className="font-bold">Inloggen mislukt</p>
             <p className="mt-1 leading-6">{error}</p>
           </div>
         )}
@@ -321,7 +326,7 @@ export function LoginForm() {
               className="rounded-lg border border-[#d2ddd8] bg-[#f7faf8] p-4 font-bold text-[#172629] transition hover:border-[#08705f] hover:bg-[#eff7f3]"
               href="/register?role=CLIENT"
             >
-              Registreren als ondernemer
+              Registreren als opdrachtgever
               <span className="mt-1 block text-xs font-medium text-[#687670]">Plaats opdrachten en vind beveiligers.</span>
             </Link>
             <Link
@@ -368,6 +373,7 @@ export function RegisterForm() {
         return;
       }
       setEmail(nextEmail);
+      setSuccess(result.message);
       setStep("code");
     } catch {
       setError("Er ging iets mis met de verbinding. Probeer het opnieuw.");
@@ -378,6 +384,7 @@ export function RegisterForm() {
 
   async function verifyCode(formData: FormData) {
     setError("");
+    setSuccess("");
     setLoading(true);
     try {
       const response = await fetch("/api/register/email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, code: formData.get("code") }) });
@@ -421,7 +428,9 @@ export function RegisterForm() {
       intro="Kies eerst hoe je SecurityMatch gaat gebruiken. Je kunt daarna direct je profiel en werkruimte inrichten."
     >
       {step === "email" && <form action={requestCode} className="mt-8 space-y-6"><Field label="Zakelijk e-mailadres" name="email" type="email" autoComplete="email" /><p className="text-sm leading-6 text-[#526064]">Je ontvangt een 6-cijferige code om je e-mailadres te bevestigen.</p><button disabled={loading} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#e76f51] px-5 text-sm font-bold text-white transition hover:bg-[#cf5f45] disabled:cursor-wait disabled:opacity-60" type="submit">{loading ? "Code versturen..." : "Code versturen"}<ArrowRight aria-hidden="true" size={17} /></button></form>}
-      {step === "code" && <form action={verifyCode} className="mt-8 space-y-6"><div><p className="text-sm font-bold text-[#172629]">Controleer je inbox</p><p className="mt-2 text-sm leading-6 text-[#526064]">Vul de code in die we naar {email} hebben gestuurd. De code is 15 minuten geldig.</p></div><Field label="6-cijferige verificatiecode" name="code" autoComplete="one-time-code" /><div className="flex gap-3"><button type="button" onClick={() => { setStep("email"); setError(""); }} className="h-12 flex-1 rounded-lg border border-[#c8d4cf] px-4 text-sm font-bold text-[#172629]">Ander e-mailadres</button><button disabled={loading} className="h-12 flex-1 rounded-lg bg-[#e76f51] px-4 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60" type="submit">{loading ? "Controleren..." : "Code bevestigen"}</button></div></form>}
+      {step === "code" && <form action={verifyCode} className="mt-8 space-y-6"><div><p className="text-sm font-bold text-[#172629]">Controleer je inbox</p><p className="mt-2 text-sm leading-6 text-[#526064]">Vul de code in die we naar {email} hebben gestuurd. De code is 15 minuten geldig. Controleer ook je spammap als je niets ontvangt.</p></div><Field label="6-cijferige verificatiecode" name="code" autoComplete="one-time-code" /><div className="flex gap-3"><button type="button" onClick={() => { setStep("email"); setError(""); setSuccess(""); }} className="h-12 flex-1 rounded-lg border border-[#c8d4cf] px-4 text-sm font-bold text-[#172629]">Ander e-mailadres</button><button disabled={loading} className="h-12 flex-1 rounded-lg bg-[#e76f51] px-4 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60" type="submit">{loading ? "Controleren..." : "Code bevestigen"}</button></div><button type="button" disabled={loading} onClick={() => { const data = new FormData(); data.set("email", email); void requestCode(data); }} className="text-sm font-bold text-[#08705f] underline disabled:opacity-60">Nieuwe code versturen (na 1 minuut)</button></form>}
+      {step !== "details" && error && <p role="alert" className="mt-4 border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
+      {step === "code" && success && <p role="status" className="mt-4 text-sm font-semibold text-[#075c4e]">{success}</p>}
       {step === "details" && <form action={submit} className="mt-8 space-y-6"><p className="border border-[#b9dfd2] bg-[#eff7f3] p-3 text-sm font-semibold text-[#075c4e]">E-mailadres bevestigd: {email}</p><AccountTypePicker value={role} onChange={setRole} /><div className="grid gap-5 sm:grid-cols-2"><Field label="Voornaam" name="firstName" autoComplete="given-name" /><Field label="Achternaam" name="lastName" autoComplete="family-name" /></div><PasswordField autoComplete="new-password" /><div className="flex items-start gap-3 border-t border-[#e2e8e4] pt-5"><input id="termsAccepted" required name="termsAccepted" value="true" type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-[#08705f]" /><label htmlFor="termsAccepted" className="text-sm leading-6 text-[#526064]">Ik ga akkoord met de <Link href="/voorwaarden" target="_blank" className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-3">platformvoorwaarden</Link> en heb de <Link href="/privacy" target="_blank" className="font-bold text-[#172629] underline decoration-[#e76f51] decoration-2 underline-offset-3">privacyverklaring</Link> gelezen.</label></div>
         {error && (
           <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">

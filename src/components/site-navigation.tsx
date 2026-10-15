@@ -40,7 +40,7 @@ function dashboardPath(role: Role) {
 
 function roleLabel(role: Role) {
   if (role === "ADMIN") return "Beheerder";
-  if (role === "CLIENT") return "Ondernemer";
+  if (role === "CLIENT") return "Opdrachtgever";
   return "ZZP-beveiliger";
 }
 
@@ -80,7 +80,7 @@ function navigationFor(role: Role | null): NavigationItem[] {
 
   return [
     { href: "/jobs", label: "Open opdrachten", icon: BriefcaseBusiness },
-    { href: "/#opdrachtgevers", label: "Voor ondernemers", icon: BriefcaseBusiness },
+    { href: "/#opdrachtgevers", label: "Voor opdrachtgevers", icon: BriefcaseBusiness },
     { href: "/#beveiligers", label: "Voor ZZP-beveiligers", icon: ShieldCheck },
     { href: "/#hoe-werkt-het", label: "Werkwijze", icon: Settings2 },
   ];
@@ -133,7 +133,7 @@ export function SiteNavigation({ role, userName, signOutAction }: SiteNavigation
   const [menuOpen, setMenuOpen] = useState(false);
   const items = navigationFor(role);
   const audienceRole =
-    pathname === "/voor-ondernemers"
+    pathname === "/voor-opdrachtgevers"
       ? "CLIENT"
       : pathname === "/voor-beveiligers"
         ? "SECURITY_PROFESSIONAL"

@@ -11,6 +11,7 @@ Werkdocument volgens AVG artikel 30. Laat doelen, grondslagen, bewaartermijnen e
 | Verificatie | Identiteits-, pas- en certificaatgegevens | [JURIDISCH BEVESTIGEN] | Bevoegde beheerders, Blob-opslag | [INVULLEN] |
 | Betaling en facturatie | Betaal-, Stripe-, factuur- en transactiedata | Overeenkomst en wettelijke administratieplicht | Stripe, database, hosting | Wettelijke termijn controleren |
 | Support en meldingen | Contactgegevens, melding en auditgegevens | Gerechtvaardigd belang, veiligheid en wettelijke plicht | Bevoegde beheerders, e-mailprovider | [INVULLEN] |
+| AVG-verzoeken | Account, verzoektype, toelichting en indieningsdatum | Behandeling van rechten van betrokkenen en aantoonbaarheid | Bevoegde beheerders, e-mailprovider indien geconfigureerd | [INVULLEN] |
 
 ## Leverancierscontrole
 
