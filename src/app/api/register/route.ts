@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { registerSchema } from "@/lib/auth-validation";
 import { hashPassword } from "@/lib/password";
@@ -38,7 +39,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    await prisma.$transaction(async (transaction) => {
+    const registered = await prisma.$transaction(async (transaction) => {
+      const consumed = await transaction.registrationEmailVerification.updateMany({
+        where: {
+          id: emailVerification.id,
+          verificationTokenHash: createHash("sha256").update(parsed.data.emailVerificationToken).digest("hex"),
+          verifiedAt: { not: null },
+          consumedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: { consumedAt: new Date() },
+      });
+      if (!consumed.count) return false;
       const created = await transaction.user.create({
         data: {
           firstName: parsed.data.firstName,
@@ -61,9 +73,13 @@ export async function POST(request: Request) {
           metadata: { version: legalTermsVersion },
         },
       });
-      await transaction.registrationEmailVerification.update({ where: { id: emailVerification.id }, data: { consumedAt: new Date() } });
+      return true;
     });
+    if (!registered) return NextResponse.json({ error: "De verificatie is verlopen of al gebruikt. Vraag een nieuwe code aan." }, { status: 400 });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ error: "Dit e-mailadres is al geregistreerd. Log in of gebruik een ander e-mailadres." }, { status: 409 });
+    }
     console.error("Registration failed", error);
     await recordRegistrationFailure({ request, data: parsed.data, reason: "Technische fout tijdens het aanmaken van het account." });
     return NextResponse.json({ error: "Registreren mislukt door een technische fout. Controleer je gegevens en probeer het opnieuw." }, { status: 500 });
