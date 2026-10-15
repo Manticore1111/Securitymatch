@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
@@ -19,7 +20,23 @@ export async function POST(request: Request) {
     }
     const verificationCode = randomInt(100000, 1000000).toString();
     const codeHash = hash(verificationCode);
-    await prisma.registrationEmailVerification.upsert({ where: { email }, create: { email, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) }, update: { codeHash, attempts: 0, verifiedAt: null, consumedAt: null, verificationTokenHash: null, expiresAt: new Date(Date.now() + 15 * 60 * 1000) } });
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    if (previous) {
+      const updated = await prisma.registrationEmailVerification.updateMany({
+        where: { email, expiresAt: { lte: new Date(Date.now() + 14 * 60 * 1000) } },
+        data: { codeHash, attempts: 0, verifiedAt: null, consumedAt: null, verificationTokenHash: null, expiresAt },
+      });
+      if (!updated.count) return NextResponse.json({ error: "Wacht een minuut voordat je een nieuwe code aanvraagt." }, { status: 429 });
+    } else {
+      try {
+        await prisma.registrationEmailVerification.create({ data: { email, codeHash, expiresAt } });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          return NextResponse.json({ error: "Wacht een minuut voordat je een nieuwe code aanvraagt." }, { status: 429 });
+        }
+        throw error;
+      }
+    }
     try {
       await sendEmail({ to: email, subject: "Je SecurityMatch-verificatiecode", html: `<p>Gebruik deze code om je e-mailadres te bevestigen:</p><p style="font-size: 24px; font-weight: bold; letter-spacing: 4px">${verificationCode}</p><p>De code is 15 minuten geldig.</p>` });
     } catch (error) {

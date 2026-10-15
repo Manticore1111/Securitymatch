@@ -261,25 +261,30 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedCallback = searchParams.get("callbackUrl");
-  const callbackUrl = requestedCallback?.startsWith("/") ? requestedCallback : "/dashboard";
+  const callbackUrl = requestedCallback?.startsWith("/") && !requestedCallback.startsWith("//") && !requestedCallback.includes("\\")
+    ? requestedCallback
+    : "/dashboard";
 
   async function submit(formData: FormData) {
     setError("");
     setLoading(true);
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Controleer je e-mailadres of gebruikersnaam en wachtwoord.");
-      return;
+    try {
+      const result = await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirect: false,
+      });
+      if (result?.error) {
+        setError("Controleer je e-mailadres of gebruikersnaam en wachtwoord.");
+        return;
+      }
+      router.push(callbackUrl);
+      router.refresh();
+    } catch {
+      setError("Inloggen is tijdelijk niet gelukt. Probeer het opnieuw.");
+    } finally {
+      setLoading(false);
     }
-
-    router.push(callbackUrl);
-    router.refresh();
   }
 
   return (
